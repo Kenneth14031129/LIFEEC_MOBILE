@@ -59,7 +59,8 @@ class _DashboardContentState extends State<DashboardContent> {
       }
 
       // Add residentId as a query parameter
-      final url = Uri.parse('http://localhost:5000/api/emergency-alerts?residentId=$residentId');
+      final url = Uri.parse(
+          'http://localhost:5000/api/emergency-alerts?residentId=$residentId');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -84,7 +85,6 @@ class _DashboardContentState extends State<DashboardContent> {
       });
     }
   }
-
 
   Future<void> _loadDashboardData() async {
     debugPrint('Starting to load dashboard data...');
@@ -224,7 +224,8 @@ class _DashboardContentState extends State<DashboardContent> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  notification['message'] ?? 'No message provided',
+                                  notification['message'] ??
+                                      'No message provided',
                                   style: GoogleFonts.lato(fontSize: 14),
                                 ),
                                 const SizedBox(height: 8),
@@ -232,7 +233,8 @@ class _DashboardContentState extends State<DashboardContent> {
                                   alignment: Alignment.bottomRight,
                                   child: Text(
                                     notification['timestamp'] != null
-                                        ? DateTime.parse(notification['timestamp'])
+                                        ? DateTime.parse(
+                                                notification['timestamp'])
                                             .toLocal()
                                             .toString()
                                         : 'No timestamp',
@@ -329,83 +331,168 @@ class _DashboardContentState extends State<DashboardContent> {
     }
 
     return Container(
-      padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            offset: Offset(4, 4),
-            blurRadius: 10,
-          ),
-        ],
-      ),
+      margin: const EdgeInsets.symmetric(vertical: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.dashboard, color: Colors.blueAccent, size: 28),
-              const SizedBox(width: 10),
-              Text(
-                'Dashboard Summary',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blueAccent,
+          // Modern header with animated indicator
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 30),
+            child: Row(
+              children: [
+                Container(
+                  width: 6,
+                  height: 35,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0xFF6C63FF), Color(0xFF3B82F6)],
+                    ),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 15),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Dashboard Overview',
+                      style: GoogleFonts.poppins(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF1E293B),
+                      ),
+                    ),
+                    Text(
+                      'Real-time monitoring and analytics',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: const Color(0xFF64748B),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildSummaryTile(
-                title: 'Total Residents',
-                value: '${dashboardSummary['totalResidents'] ?? 0}',
-                color: Colors.teal,
-              ),
-              _buildSummaryTile(
-                title: 'Total Alerts',
-                value: '${dashboardSummary['totalAlerts'] ?? 0}',
-                color: Colors.redAccent,
-              ),
-              _buildSummaryTile(
-                title: 'Active Residents',
-                value: '${dashboardSummary['activeResidents'] ?? 0}',
-                color: Colors.orange,
-              ),
-            ],
+          // Glass-morphism inspired stat cards
+          SizedBox(
+            height: 200, // Fixed height for cards
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildGlassCard(
+                    icon: Icons.groups_rounded,
+                    title: 'Total Residents',
+                    value: '${dashboardSummary['totalResidents'] ?? 0}',
+                    primaryColor: const Color(0xFF3B82F6),
+                    secondaryColor: const Color(0xFF6C63FF),
+                    gradientColors: const [
+                      Color(0xFFEEF2FF),
+                      Color(0xFFDBEAFE)
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildGlassCard(
+                    icon: Icons.warning_rounded,
+                    title: 'Total Alerts',
+                    value: '${dashboardSummary['totalAlerts'] ?? 0}',
+                    primaryColor: const Color(0xFFEF4444),
+                    secondaryColor: const Color(0xFFDC2626),
+                    gradientColors: const [
+                      Color(0xFFFEF2F2),
+                      Color(0xFFFEE2E2)
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildGlassCard(
+                    icon: Icons.person_pin_circle_rounded,
+                    title: 'Active Residents',
+                    value: '${dashboardSummary['activeResidents'] ?? 0}',
+                    primaryColor: const Color(0xFF10B981),
+                    secondaryColor: const Color(0xFF059669),
+                    gradientColors: const [
+                      Color(0xFFECFDF5),
+                      Color(0xFFD1FAE5)
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryTile({
+  Widget _buildGlassCard({
+    required IconData icon,
     required String title,
     required String value,
-    required Color color,
+    required Color primaryColor,
+    required Color secondaryColor,
+    required List<Color> gradientColors,
   }) {
-    return Expanded(
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: gradientColors,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.5),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withOpacity(0.1),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            value,
-            style: GoogleFonts.playfairDisplay(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: color,
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: primaryColor,
+              size: 20,
             ),
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: primaryColor,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 6),
           Text(
             title,
-            style: GoogleFonts.lato(
+            style: GoogleFonts.poppins(
               fontSize: 14,
-              color: Colors.grey[700],
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF1E293B),
             ),
           ),
         ],
@@ -525,8 +612,18 @@ class BarChartSample7 extends StatelessWidget {
                   reservedSize: 36,
                   getTitlesWidget: (value, meta) {
                     final months = [
-                      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                      'Jan',
+                      'Feb',
+                      'Mar',
+                      'Apr',
+                      'May',
+                      'Jun',
+                      'Jul',
+                      'Aug',
+                      'Sep',
+                      'Oct',
+                      'Nov',
+                      'Dec'
                     ];
                     final index = value.toInt();
                     return SideTitleWidget(
@@ -566,7 +663,8 @@ class BarChartSample7 extends StatelessWidget {
             ),
             barGroups: _buildBarGroups(alertsPerMonth),
             maxY: alertsPerMonth.isNotEmpty
-                ? (alertsPerMonth.reduce((a, b) => math.max(a, b)) + 5).toDouble()
+                ? (alertsPerMonth.reduce((a, b) => math.max(a, b)) + 5)
+                    .toDouble()
                 : 5.0, // Default maxY to 5 if the list is empty
           ),
         ),

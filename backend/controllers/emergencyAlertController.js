@@ -1,6 +1,21 @@
 const EmergencyAlert = require('../models/emergencyAlertModel');
 const Resident = require('../models/Basicinformation'); // Assuming you have a Resident model
 
+exports.getAllEmergencyAlerts = async (req, res) => {
+  try {
+    console.log('[INFO] Fetching all emergency alerts');
+    const alerts = await EmergencyAlert.find()
+      .sort({ timestamp: -1 })
+      .limit(100); // Optional: limit the number of alerts returned
+    
+    console.log('[INFO] Found emergency alerts:', alerts);
+    return res.status(200).json(alerts);
+  } catch (error) {
+    console.error('[ERROR] Error fetching emergency alerts:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 // Fetch emergency alerts by residentId and within the last 24 hours
 exports.getEmergencyAlertsByResident = async (req, res) => {
   const { residentId } = req.query;

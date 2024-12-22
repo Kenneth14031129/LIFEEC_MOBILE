@@ -7,5 +7,6 @@ router.post('/', emergencyAlertController.createEmergencyAlert);
 router.delete('/alerts/:id', emergencyAlertController.deleteEmergencyAlert);
 router.get('/alerts/countByMonth', emergencyAlertController.getAlertsCountByMonth);
 router.get('/dashboard/summary', emergencyAlertController.getDashboardSummary); // New route
+router.get('/all', emergencyAlertController.getAllEmergencyAlerts);
 
 module.exports = router;

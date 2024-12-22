@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,7 +8,7 @@ class FamilyChatPage extends StatefulWidget {
   final String id; // Receiver's ID
   final String name; // Receiver's name
 
-  const FamilyChatPage({Key? key, required this.id, required this.name}) : super(key: key);
+  const FamilyChatPage({super.key, required this.id, required this.name});
 
   @override
   FamilyChatPageState createState() => FamilyChatPageState();
@@ -19,7 +17,6 @@ class FamilyChatPage extends StatefulWidget {
 class FamilyChatPageState extends State<FamilyChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final List<Message> _messages = [];
-  final ImagePicker _picker = ImagePicker();
 
   String? _loggedInUserId; // To store the logged-in user's ID
   String? _msgId; // Receiver's ID
@@ -48,7 +45,8 @@ class FamilyChatPageState extends State<FamilyChatPage> {
     if (_loggedInUserId == null) {
       print('Error: Logged-in user ID not found in SharedPreferences.');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error: Could not retrieve logged-in user ID')),
+        const SnackBar(
+            content: Text('Error: Could not retrieve logged-in user ID')),
       );
     } else {
       print('Logged-in user ID loaded: $_loggedInUserId');
@@ -66,7 +64,8 @@ class FamilyChatPageState extends State<FamilyChatPage> {
 
   Future<void> _verifyMsgId() async {
     if (_msgId != widget.id) {
-      print('Warning: msg_id ($_msgId) does not match receiver ID (${widget.id}).');
+      print(
+          'Warning: msg_id ($_msgId) does not match receiver ID (${widget.id}).');
     }
   }
 
@@ -81,7 +80,8 @@ class FamilyChatPageState extends State<FamilyChatPage> {
         'http://localhost:5000/api/messages/between-users?senderId=$_loggedInUserId&receiverId=$_msgId',
       );
 
-      print('Fetching messages between sender ($_loggedInUserId) and receiver ($_msgId)');
+      print(
+          'Fetching messages between sender ($_loggedInUserId) and receiver ($_msgId)');
 
       final response = await http.get(url);
 
@@ -147,7 +147,8 @@ class FamilyChatPageState extends State<FamilyChatPage> {
     } else {
       print('Error: Sender ID is null or message is empty.');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error: Sender ID is null or message is empty')),
+        const SnackBar(
+            content: Text('Error: Sender ID is null or message is empty')),
       );
     }
   }
@@ -156,7 +157,8 @@ class FamilyChatPageState extends State<FamilyChatPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.name, style: GoogleFonts.playfairDisplay(fontSize: 20)),
+        title:
+            Text(widget.name, style: GoogleFonts.playfairDisplay(fontSize: 20)),
         backgroundColor: Colors.blueAccent,
       ),
       body: Column(
@@ -183,7 +185,9 @@ class FamilyChatPageState extends State<FamilyChatPage> {
                       margin: const EdgeInsets.symmetric(vertical: 5),
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: message.isAdmin ? Colors.blueAccent : Colors.grey.shade300,
+                        color: message.isAdmin
+                            ? Colors.blueAccent
+                            : Colors.grey.shade300,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(

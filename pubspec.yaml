@@ -32,6 +32,7 @@ dependencies:
   uuid: ^3.0.5
   shared_preferences: ^2.3.3
   flutter_dotenv: ^5.2.1
+  timeago: ^3.7.0
 
 dev_dependencies:
   flutter_test:
@@ -48,6 +49,7 @@ flutter:
     - assets/images/emergency_icon.png
     - assets/images/confirm_icon.png
     - assets/images/cancel_icon.png
+    - assets/images/healthcare_mobile.jpg
 
 
 

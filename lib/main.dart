@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'resident_provider.dart';
-import 'login_register.dart'; // Import the LoginRegister screen
+import 'login_register.dart';
 
 void main() {
   runApp(
@@ -29,9 +29,9 @@ class NurseDashboardApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFFF7F9FC),
         textTheme: GoogleFonts.playfairDisplayTextTheme(
           Theme.of(context).textTheme.apply(
-            bodyColor: Colors.black,
-            displayColor: Colors.black,
-          ),
+                bodyColor: Colors.black,
+                displayColor: Colors.black,
+              ),
         ),
       ),
       home: const Login(), // Navigate to LoginRegister screen
