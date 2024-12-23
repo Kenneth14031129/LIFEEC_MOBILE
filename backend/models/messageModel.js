@@ -19,7 +19,7 @@ const messageSchema = new mongoose.Schema(
       type: Date,
       default: Date.now, // Automatically set to the current date and time
     },
-    isRead: {
+    read: {
       type: Boolean,
       default: false, // Tracks if the message has been read
     },

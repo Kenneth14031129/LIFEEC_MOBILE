@@ -75,8 +75,97 @@ const getMessagesByUsers = async (req, res) => {
   }
 };
 
+const markMessagesAsRead = async (req, res) => {
+  try {
+      const { senderId, receiverId } = req.body;
+      console.log('\n=== Mark Messages as Read ===');
+      console.log('Request body:', req.body);
+      console.log('Sender ID:', senderId);
+      console.log('Receiver ID:', receiverId);
+
+      if (!senderId || !receiverId) {
+          console.log('❌ Validation failed - missing IDs');
+          return res.status(400).json({
+              message: "Both sender and receiver IDs are required"
+          });
+      }
+
+      const result = await Message.updateMany(
+          {
+              senderId: new mongoose.Types.ObjectId(senderId),
+              receiverId: new mongoose.Types.ObjectId(receiverId),
+              read: false
+          },
+          { $set: { read: true } }
+      );
+
+      console.log('✅ Update result:', {
+          acknowledged: result.acknowledged,
+          modifiedCount: result.modifiedCount,
+          matchedCount: result.matchedCount
+      });
+
+      res.status(200).json({
+          message: "Messages marked as read",
+          updatedCount: result.modifiedCount
+      });
+  } catch (error) {
+      console.error('❌ Error in markMessagesAsRead:', error);
+      res.status(500).json({
+          message: 'Failed to mark messages as read',
+          error: error.message
+      });
+  }
+};
+
+const getUnreadCounts = async (req, res) => {
+  try {
+      const { userId } = req.params;
+      console.log('\n=== Get Unread Counts ===');
+      console.log('User ID:', userId);
+
+      if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+          console.log('❌ Invalid user ID');
+          return res.status(400).json({ message: "Valid user ID is required" });
+      }
+
+      // Log the query we're about to execute
+      console.log('Executing aggregate query for unread messages...');
+      const unreadCounts = await Message.aggregate([
+          {
+              $match: {
+                  receiverId: new mongoose.Types.ObjectId(userId),
+                  read: false
+              }
+          },
+          {
+              $group: {
+                  _id: "$senderId",
+                  count: { $sum: 1 }
+              }
+          }
+      ]);
+
+      console.log('Raw unread counts result:', unreadCounts);
+
+      const unreadCountsObj = unreadCounts.reduce((acc, curr) => {
+          acc[curr._id.toString()] = curr.count;
+          return acc;
+      }, {});
+
+      console.log('✅ Processed unread counts:', unreadCountsObj);
+
+      res.status(200).json({ unreadCounts: unreadCountsObj });
+  } catch (error) {
+      console.error('❌ Error in getUnreadCounts:', error);
+      res.status(500).json({ message: 'Error getting unread counts', error: error.message });
+  }
+};
+
 module.exports = {
   getAllMessages,
   createMessage,
   getMessagesByUsers,
+  markMessagesAsRead,
+  getUnreadCounts
 };

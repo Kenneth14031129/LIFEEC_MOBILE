@@ -46,6 +46,7 @@ class MessagesPageState extends State<MessagesPage> {
   bool _isLoading = true;
   String? userType;
   String userEmail = '';
+  Map<String, int> unreadCounts = {};
 
   @override
   void initState() {
@@ -53,6 +54,83 @@ class MessagesPageState extends State<MessagesPage> {
     _loadUserType();
     _loadUserEmail();
     _fetchEmergencyAlerts();
+    _fetchUnreadCounts();
+  }
+
+  Future<String?> getCurrentUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('userId');
+  }
+
+  Future<void> _fetchUnreadCounts() async {
+    String? currentUserId = await getCurrentUserId();
+    print('\n=== Fetching Unread Counts ===');
+    print('Current User ID: $currentUserId');
+
+    if (currentUserId == null) {
+      print('❌ No current user ID found');
+      return;
+    }
+
+    try {
+      print('Making API request to fetch unread counts...');
+      final response = await http.get(
+        Uri.parse('http://localhost:5000/api/messages/unread/$currentUserId'),
+      );
+
+      print('Response status code: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('✅ Decoded unread counts: ${data['unreadCounts']}');
+
+        if (mounted) {
+          setState(() {
+            unreadCounts = Map<String, int>.from(data['unreadCounts']);
+          });
+          print('Updated state with new unread counts: $unreadCounts');
+        } else {
+          print('⚠️ Widget not mounted, skipped setState');
+        }
+      } else {
+        print('❌ Failed to fetch unread counts: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Error fetching unread counts: $e');
+    }
+  }
+
+  Future<void> markMessagesAsRead(String senderId, String receiverId) async {
+    print('\n=== Marking Messages as Read ===');
+    print('Sender ID: $senderId');
+    print('Receiver ID: $receiverId');
+
+    try {
+      print('Making API request to mark messages as read...');
+      final response = await http.post(
+        Uri.parse('http://localhost:5000/api/messages/mark-read'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'senderId': senderId,
+          'receiverId': receiverId,
+        }),
+      );
+
+      print('Response status code: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        print('✅ Successfully marked messages as read');
+        _fetchUnreadCounts(); // Refresh unread counts
+      } else {
+        print('❌ Failed to mark messages as read: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Error marking messages as read: $e');
+    }
   }
 
   Future<void> _loadUserEmail() async {
