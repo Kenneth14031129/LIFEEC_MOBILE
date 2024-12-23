@@ -5,8 +5,8 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FamilyChatPage extends StatefulWidget {
-  final String id; // Receiver's ID
-  final String name; // Receiver's name
+  final String id;
+  final String name;
 
   const FamilyChatPage({super.key, required this.id, required this.name});
 
@@ -14,9 +14,24 @@ class FamilyChatPage extends StatefulWidget {
   FamilyChatPageState createState() => FamilyChatPageState();
 }
 
+class Message {
+  final String content;
+  final bool isAdmin;
+  final DateTime time;
+  final bool isRead;
+
+  Message({
+    required this.content,
+    required this.isAdmin,
+    required this.time,
+    required this.isRead,
+  });
+}
+
 class FamilyChatPageState extends State<FamilyChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final List<Message> _messages = [];
+  final ScrollController _scrollController = ScrollController();
 
   String? _loggedInUserId;
   String? _msgId;
@@ -24,28 +39,36 @@ class FamilyChatPageState extends State<FamilyChatPage> {
   @override
   void initState() {
     super.initState();
-    print('\n=== FamilyChatPage Initialized ===');
     _initializeChat();
   }
 
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
   Future<void> _initializeChat() async {
-    print('\n=== Initializing Chat ===');
     await _loadUserIds();
     _verifyMsgId();
     if (_loggedInUserId != null && _msgId != null) {
-      print('✅ Both user IDs available, marking messages as read...');
       await _markMessagesAsRead();
       await _fetchMessages();
-    } else {
-      print('❌ Missing user IDs - cannot initialize chat');
     }
   }
 
   Future<void> _markMessagesAsRead() async {
-    print('\n=== Marking Messages as Read ===');
-    print('Sender ID (other user): ${widget.id}');
-    print('Receiver ID (current user): $_loggedInUserId');
-
     try {
       final response = await http.post(
         Uri.parse('http://localhost:5000/api/messages/mark-read'),
@@ -56,98 +79,66 @@ class FamilyChatPageState extends State<FamilyChatPage> {
         }),
       );
 
-      print('Mark as read response status: ${response.statusCode}');
-      print('Mark as read response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        print('✅ Successfully marked messages as read');
-      } else {
-        print('❌ Failed to mark messages as read: ${response.statusCode}');
+      if (response.statusCode != 200) {
+        print('Failed to mark messages as read: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error marking messages as read: $e');
+      print('Error marking messages as read: $e');
     }
   }
 
   Future<void> _loadUserIds() async {
-    print('\n=== Loading User IDs ===');
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('userId');
-      final msgId = prefs.getString('msg_id');
-
-      print('Loaded from SharedPreferences:');
-      print('- userId: $userId');
-      print('- msg_id: $msgId');
-      print('- widget.id: ${widget.id}');
-
       setState(() {
         _loggedInUserId = userId;
-        _msgId = widget.id; // Use widget.id directly instead of stored msg_id
+        _msgId = widget.id;
       });
-
-      if (_loggedInUserId == null) {
-        print('❌ Error: Logged-in user ID not found');
-      } else {
-        print('✅ Logged-in user ID loaded: $_loggedInUserId');
-      }
-
-      if (_msgId == null) {
-        print('❌ Error: msg_id not found');
-      } else {
-        print('✅ msg_id loaded: $_msgId');
-      }
     } catch (e) {
-      print('❌ Error loading user IDs: $e');
+      print('Error loading user IDs: $e');
     }
   }
 
   Future<void> _verifyMsgId() async {
-    print('\n=== Verifying Message ID ===');
     if (_msgId != widget.id) {
       print(
-          '⚠️ Warning: msg_id ($_msgId) does not match receiver ID (${widget.id})');
-    } else {
-      print('✅ msg_id matches receiver ID');
+          'Warning: msg_id ($_msgId) does not match receiver ID (${widget.id})');
     }
   }
 
   Future<void> _fetchMessages() async {
-    print('\n=== Fetching Messages ===');
-    if (_loggedInUserId == null || _msgId == null) {
-      print('❌ Error: User IDs are not loaded yet');
-      return;
-    }
+    if (_loggedInUserId == null || _msgId == null) return;
 
     try {
       final url = Uri.parse(
         'http://localhost:5000/api/messages/between-users?senderId=$_loggedInUserId&receiverId=$_msgId',
       );
-      print('Fetching messages from: $url');
 
       final response = await http.get(url);
-      print('Fetch response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         List jsonResponse = json.decode(response.body);
-        print('Received ${jsonResponse.length} messages');
-
         setState(() {
           _messages.clear();
           _messages.addAll(jsonResponse.map((msg) {
+            // Parse the UTC time and convert to local
+            DateTime utcTime = DateTime.parse(msg['time']);
+            DateTime localTime = utcTime.toLocal();
+
             return Message(
               content: msg['text'],
               isAdmin: msg['senderId'] == _loggedInUserId,
+              time: localTime, // Use local time
+              isRead: msg['read'] ?? false,
             );
           }).toList());
         });
-        print('✅ Messages updated in state');
+        Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
       } else {
-        print('❌ Failed to load messages: ${response.body}');
         throw Exception('Failed to load messages: ${response.body}');
       }
     } catch (e) {
-      print('❌ Error fetching messages: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error fetching messages: $e')),
@@ -156,53 +147,52 @@ class FamilyChatPageState extends State<FamilyChatPage> {
     }
   }
 
+  String _formatTime(DateTime time) {
+    final hour = time.hour;
+    final minute = time.minute;
+    final period = hour >= 12 ? 'PM' : 'AM';
+
+    // Convert 24-hour to 12-hour format
+    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+
+    // Format with padded minutes and AM/PM
+    return '$displayHour:${minute.toString().padLeft(2, '0')} $period';
+  }
+
   Future<void> _sendMessage() async {
-    print('\n=== Sending Message ===');
-    if (_messageController.text.isEmpty) {
-      print('❌ Error: Message is empty');
-      return;
-    }
-    if (_loggedInUserId == null) {
-      print('❌ Error: Sender ID is null');
-      return;
-    }
+    if (_messageController.text.isEmpty || _loggedInUserId == null) return;
 
     try {
+      final now = DateTime.now();
       final messageData = {
         'senderId': _loggedInUserId,
         'receiverId': _msgId,
         'text': _messageController.text,
-        'time': DateTime.now().toIso8601String(),
+        'time': now.toUtc().toIso8601String(), // Convert to UTC for storage
         'read': false,
       };
 
-      print('Sending message data: $messageData');
-
-      final url = Uri.parse('http://localhost:5000/api/messages');
       final response = await http.post(
-        url,
+        Uri.parse('http://localhost:5000/api/messages'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(messageData),
       );
-
-      print('Send response status: ${response.statusCode}');
-      print('Send response body: ${response.body}');
 
       if (response.statusCode == 201) {
         setState(() {
           _messages.add(Message(
             content: _messageController.text,
             isAdmin: true,
+            time: now, // Use local time for display
+            isRead: false,
           ));
         });
         _messageController.clear();
-        print('✅ Message sent successfully');
+        Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
       } else {
-        print('❌ Failed to send message: ${response.body}');
         throw Exception('Failed to send message: ${response.body}');
       }
     } catch (e) {
-      print('❌ Error sending message: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
@@ -215,67 +205,144 @@ class FamilyChatPageState extends State<FamilyChatPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title:
-            Text(widget.name, style: GoogleFonts.playfairDisplay(fontSize: 20)),
+        title: Text(
+          widget.name,
+          style: GoogleFonts.playfairDisplay(
+            fontSize: 20,
+            color: Colors.white,
+          ),
+        ),
         backgroundColor: Colors.blueAccent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(16),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
-                return Row(
-                  mainAxisAlignment: message.isAdmin
-                      ? MainAxisAlignment.end
-                      : MainAxisAlignment.start,
-                  children: [
-                    if (!message.isAdmin)
-                      const CircleAvatar(
-                        backgroundColor: Colors.blueAccent,
-                        radius: 20,
-                        child: Icon(Icons.person, color: Colors.white),
-                      ),
-                    if (!message.isAdmin) const SizedBox(width: 10),
-                    Container(
-                      margin: const EdgeInsets.symmetric(vertical: 5),
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: message.isAdmin
-                            ? Colors.blueAccent
-                            : Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        message.content,
-                        style: TextStyle(
-                          color: message.isAdmin ? Colors.white : Colors.black,
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Row(
+                    mainAxisAlignment: message.isAdmin
+                        ? MainAxisAlignment.end
+                        : MainAxisAlignment.start,
+                    children: [
+                      if (!message.isAdmin) ...[
+                        const CircleAvatar(
+                          backgroundColor: Colors.blueAccent,
+                          radius: 20,
+                          child: Icon(Icons.person, color: Colors.white),
+                        ),
+                        const SizedBox(width: 10),
+                      ],
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: message.isAdmin
+                                ? Colors.blueAccent
+                                : Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: message.isAdmin
+                                ? CrossAxisAlignment.end
+                                : CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                message.content,
+                                style: TextStyle(
+                                  color: message.isAdmin
+                                      ? Colors.white
+                                      : Colors.black87,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _formatTime(message.time),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: message.isAdmin
+                                          ? Colors.white.withOpacity(0.7)
+                                          : Colors.black54,
+                                    ),
+                                  ),
+                                  if (message.isAdmin) ...[
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      message.isRead
+                                          ? Icons.done_all
+                                          : Icons.done,
+                                      size: 16,
+                                      color: Colors.white.withOpacity(0.7),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 );
               },
             ),
           ),
-          Padding(
+          Container(
             padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.2),
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                  offset: const Offset(0, -1),
+                ),
+              ],
+            ),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _messageController,
-                    decoration: const InputDecoration(
-                      labelText: 'Enter your message',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: 'Type your message...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.send, color: Colors.blueAccent),
-                  onPressed: _sendMessage,
+                const SizedBox(width: 8),
+                Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.blueAccent,
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.send, color: Colors.white),
+                    onPressed: _sendMessage,
+                  ),
                 ),
               ],
             ),
@@ -284,11 +351,4 @@ class FamilyChatPageState extends State<FamilyChatPage> {
       ),
     );
   }
-}
-
-class Message {
-  final String content;
-  final bool isAdmin;
-
-  Message({required this.content, required this.isAdmin});
 }
