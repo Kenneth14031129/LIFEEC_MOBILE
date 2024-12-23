@@ -302,6 +302,7 @@ class MessagesPageState extends State<MessagesPage> {
           return {
             '_id': user['_id'],
             'name': user['name'],
+            'userType': user['userType'], // Add userType to the map
           };
         }).toList();
 
@@ -556,6 +557,7 @@ class MessagesPageState extends State<MessagesPage> {
       return _buildUserItem(
         context,
         user['name'],
+        user['userType'], // Add userType
         Icons.person,
         user['_id'],
         index,
@@ -563,16 +565,34 @@ class MessagesPageState extends State<MessagesPage> {
     }).toList();
   }
 
-  Widget _buildUserItem(
-      BuildContext context, String name, IconData icon, String id, int index) {
+  Widget _buildUserItem(BuildContext context, String name, String userType,
+      IconData icon, String id, int index) {
+    // Convert "Family Member" to "Relative" for display only
+    String displayUserType =
+        userType == 'Family Member' ? 'Relative' : userType;
+
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: Colors.blueAccent,
         child: Icon(icon, color: Colors.white),
       ),
-      title: Text(
-        name,
-        style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.w800),
+      title: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: name,
+              style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.w800),
+            ),
+            TextSpan(
+              text: ' ($displayUserType)',
+              style: GoogleFonts.playfairDisplay(
+                fontWeight: FontWeight.w400,
+                color: Colors.grey[600],
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
       ),
       onTap: () async {
         SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -583,6 +603,7 @@ class MessagesPageState extends State<MessagesPage> {
             builder: (context) => FamilyChatPage(
               id: id,
               name: name,
+              userType: displayUserType, // Pass the display version
             ),
           ),
         );

@@ -7,8 +7,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 class FamilyChatPage extends StatefulWidget {
   final String id;
   final String name;
+  final String userType;
 
-  const FamilyChatPage({super.key, required this.id, required this.name});
+  const FamilyChatPage({
+    super.key,
+    required this.id,
+    required this.name,
+    required this.userType,
+  });
 
   @override
   FamilyChatPageState createState() => FamilyChatPageState();
@@ -205,12 +211,33 @@ class FamilyChatPageState extends State<FamilyChatPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.name,
-          style: GoogleFonts.playfairDisplay(
-            fontSize: 20,
-            color: Colors.white,
-          ),
+        title: Row(
+          children: [
+            Flexible(
+              child: RichText(
+                overflow: TextOverflow.ellipsis,
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: widget.name,
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 20,
+                        color: Colors.white,
+                      ),
+                    ),
+                    TextSpan(
+                      text:
+                          ' (${widget.userType == 'Family Member' ? 'Relative' : widget.userType})',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 18,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
         backgroundColor: Colors.blueAccent,
         leading: IconButton(
