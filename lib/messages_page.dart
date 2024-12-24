@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -70,50 +71,80 @@ class MessagesPageState extends State<MessagesPage> {
 
   Future<void> _fetchUnreadCounts() async {
     String? currentUserId = await getCurrentUserId();
-    print('\n=== Fetching Unread Counts ===');
-    print('Current User ID: $currentUserId');
+    if (kDebugMode) {
+      print('\n=== Fetching Unread Counts ===');
+    }
+    if (kDebugMode) {
+      print('Current User ID: $currentUserId');
+    }
 
     if (currentUserId == null) {
-      print('❌ No current user ID found');
+      if (kDebugMode) {
+        print('❌ No current user ID found');
+      }
       return;
     }
 
     try {
-      print('Making API request to fetch unread counts...');
+      if (kDebugMode) {
+        print('Making API request to fetch unread counts...');
+      }
       final response = await http.get(
         Uri.parse('http://localhost:5000/api/messages/unread/$currentUserId'),
       );
 
-      print('Response status code: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      if (kDebugMode) {
+        print('Response status code: ${response.statusCode}');
+      }
+      if (kDebugMode) {
+        print('Response body: ${response.body}');
+      }
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('✅ Decoded unread counts: ${data['unreadCounts']}');
+        if (kDebugMode) {
+          print('✅ Decoded unread counts: ${data['unreadCounts']}');
+        }
 
         if (mounted) {
           setState(() {
             unreadCounts = Map<String, int>.from(data['unreadCounts']);
           });
-          print('Updated state with new unread counts: $unreadCounts');
+          if (kDebugMode) {
+            print('Updated state with new unread counts: $unreadCounts');
+          }
         } else {
-          print('⚠️ Widget not mounted, skipped setState');
+          if (kDebugMode) {
+            print('⚠️ Widget not mounted, skipped setState');
+          }
         }
       } else {
-        print('❌ Failed to fetch unread counts: ${response.statusCode}');
+        if (kDebugMode) {
+          print('❌ Failed to fetch unread counts: ${response.statusCode}');
+        }
       }
     } catch (e) {
-      print('❌ Error fetching unread counts: $e');
+      if (kDebugMode) {
+        print('❌ Error fetching unread counts: $e');
+      }
     }
   }
 
   Future<void> markMessagesAsRead(String senderId, String receiverId) async {
-    print('\n=== Marking Messages as Read ===');
-    print('Sender ID: $senderId');
-    print('Receiver ID: $receiverId');
+    if (kDebugMode) {
+      print('\n=== Marking Messages as Read ===');
+    }
+    if (kDebugMode) {
+      print('Sender ID: $senderId');
+    }
+    if (kDebugMode) {
+      print('Receiver ID: $receiverId');
+    }
 
     try {
-      print('Making API request to mark messages as read...');
+      if (kDebugMode) {
+        print('Making API request to mark messages as read...');
+      }
       final response = await http.post(
         Uri.parse('http://localhost:5000/api/messages/mark-read'),
         headers: {
@@ -125,17 +156,27 @@ class MessagesPageState extends State<MessagesPage> {
         }),
       );
 
-      print('Response status code: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      if (kDebugMode) {
+        print('Response status code: ${response.statusCode}');
+      }
+      if (kDebugMode) {
+        print('Response body: ${response.body}');
+      }
 
       if (response.statusCode == 200) {
-        print('✅ Successfully marked messages as read');
-        _fetchUnreadCounts(); // Refresh unread counts
+        if (kDebugMode) {
+          print('✅ Successfully marked messages as read');
+        }
+        _fetchUnreadCounts();
       } else {
-        print('❌ Failed to mark messages as read: ${response.statusCode}');
+        if (kDebugMode) {
+          print('❌ Failed to mark messages as read: ${response.statusCode}');
+        }
       }
     } catch (e) {
-      print('❌ Error marking messages as read: $e');
+      if (kDebugMode) {
+        print('❌ Error marking messages as read: $e');
+      }
     }
   }
 
@@ -178,7 +219,9 @@ class MessagesPageState extends State<MessagesPage> {
           _isLoading = false;
         });
       }
-      print('Error fetching alerts: $e');
+      if (kDebugMode) {
+        print('Error fetching alerts: $e');
+      }
     }
   }
 
@@ -203,91 +246,6 @@ class MessagesPageState extends State<MessagesPage> {
     }
   }
 
-  void _showNotificationDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Emergency Alerts',
-                style: GoogleFonts.playfairDisplay(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: _fetchEmergencyAlerts,
-              ),
-            ],
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : alerts.isEmpty
-                    ? const Center(
-                        child: Text('No emergency alerts'),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: alerts.length,
-                        itemBuilder: (context, index) {
-                          final alert = alerts[index];
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Icon(Icons.warning,
-                                        color: Colors.red),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'Emergency alert triggered for ${alert.residentName}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 32.0),
-                                  child: Text(
-                                    getTimeAgo(alert.timestamp),
-                                    style: const TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                                if (index < alerts.length - 1)
-                                  const Divider(height: 24),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Close'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   void _loadUserType() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -309,7 +267,7 @@ class MessagesPageState extends State<MessagesPage> {
           return {
             '_id': user['_id'],
             'name': user['name'],
-            'userType': user['userType'], // Add userType to the map
+            'userType': user['userType'],
           };
         }).toList();
 
@@ -324,7 +282,9 @@ class MessagesPageState extends State<MessagesPage> {
         throw Exception('Failed to load users');
       }
     } catch (error) {
-      print('Error fetching users: $error');
+      if (kDebugMode) {
+        print('Error fetching users: $error');
+      }
       _loadCachedUsers();
     }
   }
@@ -353,13 +313,21 @@ class MessagesPageState extends State<MessagesPage> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(120.0),
         child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blueAccent, Colors.lightBlueAccent],
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF1E88E5), Color(0xFF64B5F6)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.only(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+            borderRadius: const BorderRadius.only(
               bottomLeft: Radius.circular(40),
               bottomRight: Radius.circular(40),
             ),
@@ -369,7 +337,7 @@ class MessagesPageState extends State<MessagesPage> {
             elevation: 0,
             leading: userType == 'Nurse'
                 ? IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
                     onPressed: () => Navigator.of(context).pop(),
                   )
                 : Builder(
@@ -384,10 +352,11 @@ class MessagesPageState extends State<MessagesPage> {
                   ),
             title: Text(
               'Messages',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 20,
+              style: GoogleFonts.poppins(
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
+                letterSpacing: 0.5,
               ),
             ),
             centerTitle: true,
@@ -431,13 +400,6 @@ class MessagesPageState extends State<MessagesPage> {
                           ),
                       ],
                     ),
-                    Tooltip(
-                      message: 'Search',
-                      child: IconButton(
-                        icon: const Icon(Icons.search, color: Colors.white),
-                        onPressed: () {},
-                      ),
-                    ),
                   ]
                 : null,
             bottom: PreferredSize(
@@ -445,19 +407,38 @@ class MessagesPageState extends State<MessagesPage> {
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: _onSearchChanged,
-                  decoration: InputDecoration(
-                    hintText: 'Search',
-                    fillColor: Colors.white,
-                    filled: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        spreadRadius: 1,
+                        blurRadius: 5,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: _onSearchChanged,
+                    decoration: InputDecoration(
+                      hintText: 'Search messages...',
+                      hintStyle: GoogleFonts.poppins(
+                        color: Colors.grey[400],
+                        fontSize: 14,
+                      ),
+                      fillColor: Colors.white,
+                      filled: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: BorderSide.none,
+                      ),
+                      prefixIcon:
+                          const Icon(Icons.search, color: Color(0xFF1E88E5)),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    prefixIcon:
-                        const Icon(Icons.search, color: Colors.blueAccent),
                   ),
                 ),
               ),
@@ -467,14 +448,18 @@ class MessagesPageState extends State<MessagesPage> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView(
-                    children: _buildUserList(),
+          : Container(
+              color: Colors.grey[50],
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      children: _buildEnhancedUserList(),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
     );
   }
@@ -482,135 +467,447 @@ class MessagesPageState extends State<MessagesPage> {
   Widget _buildDrawer() {
     String dashboardTitle = '';
     if (userType == 'Nutritionist') {
-      dashboardTitle = 'Nutritionist Dashboard';
+      dashboardTitle = 'Nutritionist';
     } else if (userType == 'Family Member') {
-      dashboardTitle = 'Relative Dashboard';
+      dashboardTitle = 'Relative';
     }
 
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.blueAccent, Colors.lightBlueAccent],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+      child: Container(
+        color: Colors.white,
+        child: Column(
+          children: [
+            // Enhanced Drawer Header
+            Container(
+              padding: const EdgeInsets.only(top: 50, bottom: 20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1E88E5), Color(0xFF64B5F6)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Profile Section
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: const CircleAvatar(
+                            radius: 35,
+                            backgroundColor: Colors.white,
+                            child: Icon(Icons.person,
+                                size: 40, color: Color(0xFF1E88E5)),
+                          ),
+                        ),
+                        const SizedBox(width: 15),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                dashboardTitle,
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                userEmail,
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 14,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const CircleAvatar(
-                  radius: 30,
-                  backgroundColor: Colors.white,
-                  child: Icon(Icons.person, color: Colors.blueAccent, size: 35),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  dashboardTitle,
-                  style: GoogleFonts.playfairDisplay(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+
+            // Enhanced Menu Items
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                children: [
+                  _buildEnhancedDrawerItem(
+                    icon: Icons.settings,
+                    title: 'Settings',
+                    subtitle: 'App preferences',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (context) => const SettingsPage()),
+                      );
+                    },
                   ),
-                ),
-                Text(
-                  userEmail,
-                  style: GoogleFonts.playfairDisplay(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
+                  _buildDivider(),
+                ],
+              ),
             ),
-          ),
-          _buildDrawerItem(Icons.settings, 'Settings', onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const SettingsPage()),
-            );
-          }),
-          _buildDrawerItem(Icons.logout, 'Logout', onTap: () async {
-            SharedPreferences prefs = await SharedPreferences.getInstance();
-            await prefs.clear();
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (context) => const Login()),
-              (Route<dynamic> route) => false,
-            );
-          }),
-        ],
-      ),
-    );
-  }
 
-  static Widget _buildDrawerItem(IconData icon, String title,
-      {VoidCallback? onTap}) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.blueAccent),
-      title: Text(
-        title,
-        style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.w800),
-      ),
-      onTap: onTap,
-    );
-  }
-
-  List<Widget> _buildUserList() {
-    return _users.asMap().entries.map((entry) {
-      int index = entry.key;
-      var user = entry.value;
-      return _buildUserItem(
-        context,
-        user['name'],
-        user['userType'], // Add userType
-        Icons.person,
-        user['_id'],
-        index,
-      );
-    }).toList();
-  }
-
-  Widget _buildUserItem(BuildContext context, String name, String userType,
-      IconData icon, String id, int index) {
-    // Convert "Family Member" to "Relative" for display only
-    String displayUserType =
-        userType == 'Family Member' ? 'Relative' : userType;
-
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Colors.blueAccent,
-        child: Icon(icon, color: Colors.white),
-      ),
-      title: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text: name,
-              style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.w800),
-            ),
-            TextSpan(
-              text: ' ($displayUserType)',
-              style: GoogleFonts.playfairDisplay(
-                fontWeight: FontWeight.w400,
-                color: Colors.grey[600],
-                fontSize: 14,
+            // Bottom Section with Logout
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                border: Border(
+                  top: BorderSide(color: Colors.grey.shade200),
+                ),
+              ),
+              child: _buildEnhancedDrawerItem(
+                icon: Icons.logout_rounded,
+                title: 'Logout',
+                subtitle: 'Sign out of your account',
+                showTrailing: false,
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        title: Text(
+                          'Confirm Logout',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        content: Text(
+                          'Are you sure you want to logout?',
+                          style: GoogleFonts.poppins(),
+                        ),
+                        actions: [
+                          TextButton(
+                            child: Text(
+                              'Cancel',
+                              style: GoogleFonts.poppins(
+                                color: Colors.grey,
+                              ),
+                            ),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1E88E5),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: Text(
+                              'Logout',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                              ),
+                            ),
+                            onPressed: () async {
+                              SharedPreferences prefs =
+                                  await SharedPreferences.getInstance();
+                              await prefs.clear();
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                    builder: (context) => const Login()),
+                                (Route<dynamic> route) => false,
+                              );
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
               ),
             ),
           ],
         ),
       ),
-      onTap: () async {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString('msg_id', id);
-        print('Selected user ID saved as msg_id: $id');
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => FamilyChatPage(
-              id: id,
-              name: name,
-              userType: displayUserType, // Pass the display version
+    );
+  }
+
+  Widget _buildEnhancedDrawerItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    bool showTrailing = true,
+  }) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E88E5).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: const Color(0xFF1E88E5), size: 24),
+      ),
+      title: Text(
+        title,
+        style: GoogleFonts.poppins(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: GoogleFonts.poppins(
+          fontSize: 12,
+          color: Colors.grey.shade600,
+        ),
+      ),
+      trailing: showTrailing
+          ? Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400)
+          : null,
+      onTap: onTap,
+    );
+  }
+
+  Widget _buildDivider() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Divider(color: Colors.grey.shade200),
+    );
+  }
+
+  List<Widget> _buildEnhancedUserList() {
+    return _users.asMap().entries.map((entry) {
+      int index = entry.key;
+      var user = entry.value;
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(15),
+            onTap: () async {
+              SharedPreferences prefs = await SharedPreferences.getInstance();
+              await prefs.setString('msg_id', user['_id']);
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => FamilyChatPage(
+                    id: user['_id'],
+                    name: user['name'],
+                    userType: user['userType'] == 'Family Member'
+                        ? 'Relative'
+                        : user['userType'],
+                  ),
+                ),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.blue[400]!, Colors.blue[600]!],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    child: Center(
+                      child: Text(
+                        user['name'][0].toUpperCase(),
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user['name'],
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          user['userType'] == 'Family Member'
+                              ? 'Relative'
+                              : user['userType'],
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (unreadCounts[user['_id']] != null &&
+                      unreadCounts[user['_id']]! > 0)
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF1E88E5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '${unreadCounts[user['_id']]}',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+
+  void _showNotificationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Colors.white,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Emergency Alerts',
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: _fetchEmergencyAlerts,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.6,
+                  ),
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : alerts.isEmpty
+                          ? Center(
+                              child: Text(
+                                'No emergency alerts',
+                                style: GoogleFonts.poppins(),
+                              ),
+                            )
+                          : ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: alerts.length,
+                              itemBuilder: (context, index) {
+                                final alert = alerts[index];
+                                return Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8.0),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.red[50],
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.warning,
+                                                color: Colors.red),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                'Emergency alert for ${alert.residentName}',
+                                                style: GoogleFonts.poppins(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(left: 32.0),
+                                          child: Text(
+                                            getTimeAgo(alert.timestamp),
+                                            style: GoogleFonts.poppins(
+                                              color: Colors.grey[600],
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  child: Text(
+                    'Close',
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFF1E88E5),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
             ),
           ),
         );
