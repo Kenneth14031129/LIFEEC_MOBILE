@@ -32,6 +32,12 @@ class EmergencyAlert {
       timestamp: DateTime.parse(json['timestamp']),
     );
   }
+
+  bool isExpired() {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+    return difference.inHours >= 24;
+  }
 }
 
 class NurseDashboardApp extends StatelessWidget {
@@ -110,6 +116,7 @@ class NurseDashboardState extends State<NurseDashboard> {
           setState(() {
             alerts = data
                 .map((alert) => EmergencyAlert.fromJson(alert))
+                .where((alert) => !alert.isExpired())
                 .toList()
               ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
             isLoading = false;
