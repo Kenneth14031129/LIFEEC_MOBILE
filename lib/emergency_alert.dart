@@ -56,7 +56,8 @@ class EmergencyAlertPageState extends State<EmergencyAlertPage>
 
   void _sendEmergencyAlert() async {
     if (_selectedResident == null) {
-      _showAlertDialog('Error', 'Please select a resident before sending an alert.');
+      _showAlertDialog(
+          'Error', 'Please select a resident before sending an alert.');
       return;
     }
 

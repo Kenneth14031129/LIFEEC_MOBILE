@@ -4,8 +4,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'emergency_alert.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'emergency_alert.dart';
 
 class DashboardContent extends StatefulWidget {
   final Function(BuildContext, Widget) navigateToPage;
@@ -21,73 +21,83 @@ class DashboardContent extends StatefulWidget {
   State<DashboardContent> createState() => _DashboardContentState();
 }
 
-class _DashboardContentState extends State<DashboardContent> {
+class _DashboardContentState extends State<DashboardContent>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
   bool isLoading = false;
   String errorMessage = '';
   List<int> alertsPerMonth = List.generate(12, (_) => 0);
   Map<String, dynamic> dashboardSummary = {};
-
   List<Map<String, dynamic>> notifications = [];
   bool isLoadingNotifications = false;
   String notificationsErrorMessage = '';
+  bool showStatsTooltip = false;
 
   @override
   void initState() {
     super.initState();
+    _setupAnimations();
+    _initializeData();
+  }
+
+  void _setupAnimations() {
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+  }
+
+  void _initializeData() {
     if (widget.userType == 'Family Member') {
       _fetchNotifications();
     } else {
       _loadDashboardData();
     }
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchNotifications() async {
-    debugPrint('Fetching notifications from emergency alert table...');
     setState(() {
       isLoadingNotifications = true;
       notificationsErrorMessage = '';
     });
 
     try {
-      // Fetch the residentId from SharedPreferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String? residentId = prefs.getString('residentId');
 
       if (residentId == null) {
-        debugPrint('Resident ID not found.');
         throw Exception('Resident ID is required to fetch notifications.');
       }
 
-      // Add residentId as a query parameter
       final url = Uri.parse(
           'http://localhost:5000/api/emergency-alerts?residentId=$residentId');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        debugPrint('Notifications fetched: $data');
         setState(() {
           notifications = data.cast<Map<String, dynamic>>();
+          isLoadingNotifications = false;
         });
       } else {
-        debugPrint(
-            'Failed to fetch notifications. Status code: ${response.statusCode}');
         throw Exception('Failed to fetch notifications');
       }
     } catch (e) {
-      debugPrint('Error fetching notifications: $e');
       setState(() {
         notificationsErrorMessage = 'Failed to load notifications: $e';
-      });
-    } finally {
-      setState(() {
         isLoadingNotifications = false;
       });
     }
   }
 
   Future<void> _loadDashboardData() async {
-    debugPrint('Starting to load dashboard data...');
     setState(() {
       isLoading = true;
       errorMessage = '';
@@ -98,14 +108,11 @@ class _DashboardContentState extends State<DashboardContent> {
         _fetchAlertsPerMonth(DateTime.now().year),
         _fetchDashboardSummary(),
       ]);
-      debugPrint('Dashboard data loaded successfully.');
     } catch (e) {
-      debugPrint('Error loading dashboard data: $e');
       setState(() {
         errorMessage = 'Failed to load data: $e';
       });
     } finally {
-      debugPrint('Dashboard data load complete.');
       setState(() {
         isLoading = false;
       });
@@ -115,23 +122,18 @@ class _DashboardContentState extends State<DashboardContent> {
   Future<void> _fetchAlertsPerMonth(int year) async {
     final url = Uri.parse(
         'http://localhost:5000/api/emergency-alerts/alerts/countByMonth?year=$year');
-    debugPrint('Fetching alerts per month from $url...');
 
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        debugPrint('Alerts per month data: $data');
         setState(() {
           alertsPerMonth = data.cast<int>();
         });
       } else {
-        debugPrint(
-            'Failed to fetch alerts count. Status code: ${response.statusCode}');
         throw Exception('Failed to fetch alerts count');
       }
     } catch (e) {
-      debugPrint('Error fetching alerts per month: $e');
       rethrow;
     }
   }
@@ -139,25 +141,185 @@ class _DashboardContentState extends State<DashboardContent> {
   Future<void> _fetchDashboardSummary() async {
     final url = Uri.parse(
         'http://localhost:5000/api/emergency-alerts/dashboard/summary');
-    debugPrint('Fetching dashboard summary from $url...');
 
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        debugPrint('Dashboard summary data: $data');
         setState(() {
-          dashboardSummary = data;
+          dashboardSummary = json.decode(response.body);
         });
       } else {
-        debugPrint(
-            'Failed to fetch dashboard summary. Status code: ${response.statusCode}');
         throw Exception('Failed to fetch dashboard summary');
       }
     } catch (e) {
-      debugPrint('Error fetching dashboard summary: $e');
       rethrow;
     }
+  }
+
+  Widget _buildNotificationList() {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Notifications"),
+        backgroundColor: Colors.blue[600],
+        elevation: 0,
+      ),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _buildNotificationContent(),
+      ),
+    );
+  }
+
+  Widget _buildNotificationContent() {
+    if (isLoadingNotifications) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (notificationsErrorMessage.isNotEmpty) {
+      return _buildErrorState(notificationsErrorMessage);
+    }
+
+    if (notifications.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16.0),
+      itemCount: notifications.length,
+      itemBuilder: (context, index) {
+        return _buildNotificationCard(notifications[index]);
+      },
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              color: Colors.red[300],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: _fetchNotifications,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue[600],
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.notifications_none, size: 64, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            "No notifications available",
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationCard(Map<String, dynamic> notification) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [Colors.white, Colors.blue[50]!],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[100],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.notification_important,
+                    color: Colors.blue[900],
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    notification['residentName'] ?? 'Unknown',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              notification['message'] ?? 'No message provided',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Text(
+                _formatTimestamp(notification['timestamp']),
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatTimestamp(String? timestamp) {
+    if (timestamp == null) return 'No timestamp';
+    final DateTime dateTime = DateTime.parse(timestamp).toLocal();
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -169,165 +331,71 @@ class _DashboardContentState extends State<DashboardContent> {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < 600) {
-          return _buildMobileLayout(context);
+          return _buildMobileLayout();
         } else {
-          return _buildTabletLayout(context);
+          return _buildTabletLayout();
         }
       },
     );
   }
 
-  Widget _buildNotificationList() {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Notifications"),
-        backgroundColor: Colors.blueAccent,
-      ),
-      body: isLoadingNotifications
-          ? const Center(child: CircularProgressIndicator())
-          : notificationsErrorMessage.isNotEmpty
-              ? Center(
-                  child: Text(
-                    notificationsErrorMessage,
-                    style: const TextStyle(color: Colors.red, fontSize: 16),
-                  ),
-                )
-              : notifications.isEmpty
-                  ? const Center(
-                      child: Text(
-                        "No notifications available.",
-                        style: TextStyle(fontSize: 18, color: Colors.grey),
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16.0),
-                      itemCount: notifications.length,
-                      itemBuilder: (context, index) {
-                        final notification = notifications[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 8.0),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10.0),
-                          ),
-                          elevation: 4,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  notification['residentName'] ?? 'Unknown',
-                                  style: GoogleFonts.lato(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  notification['message'] ??
-                                      'No message provided',
-                                  style: GoogleFonts.lato(fontSize: 14),
-                                ),
-                                const SizedBox(height: 8),
-                                Align(
-                                  alignment: Alignment.bottomRight,
-                                  child: Text(
-                                    notification['timestamp'] != null
-                                        ? DateTime.parse(
-                                                notification['timestamp'])
-                                            .toLocal()
-                                            .toString()
-                                        : 'No timestamp',
-                                    style: GoogleFonts.lato(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-    );
-  }
-
-  Widget _buildMobileLayout(BuildContext context) {
+  Widget _buildMobileLayout() {
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 20),
-            _buildSummarySection(),
-            const SizedBox(height: 20),
-            isLoading || alertsPerMonth.every((count) => count == 0)
-                ? const Center(
-                    child: Text(
-                      'No data available',
-                      style: TextStyle(fontSize: 18, color: Colors.grey),
-                    ),
-                  )
-                : _buildStatsSection(),
-            const SizedBox(height: 20),
-            Center(
-              child: _buildEmergencyButton(context),
-            ),
+            _buildStatCards(),
+            const SizedBox(height: 5),
+            _buildChartSection(),
+            const SizedBox(height: 5),
+            Center(child: _buildEmergencyButton()),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTabletLayout(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(32.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
+  Widget _buildTabletLayout() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 2,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 20),
-                _buildSummarySection(),
-                const SizedBox(height: 20),
-                isLoading || alertsPerMonth.every((count) => count == 0)
-                    ? const Center(
-                        child: Text(
-                          'No data available',
-                          style: TextStyle(fontSize: 18, color: Colors.grey),
-                        ),
-                      )
-                    : _buildStatsSection(),
+                _buildStatCards(),
+                const SizedBox(height: 5),
+                _buildChartSection(),
               ],
             ),
           ),
-          const SizedBox(width: 32),
-          Expanded(
-            child: Center(
-              child: _buildEmergencyButton(context),
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                _buildEmergencyButton(),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildSummarySection() {
+  Widget _buildStatCards() {
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
     if (errorMessage.isNotEmpty) {
-      return Center(
-        child: Text(
-          errorMessage,
-          style: const TextStyle(color: Colors.red, fontSize: 16),
-        ),
-      );
+      return _buildErrorState(errorMessage);
     }
 
     return Container(
@@ -486,64 +554,133 @@ class _DashboardContentState extends State<DashboardContent> {
     );
   }
 
-  Widget _buildStatsSection() {
+  Widget _buildChartSection() {
     return Container(
-      height: 300,
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.black, width: 2),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
           BoxShadow(
-            color: Colors.black12,
-            offset: Offset(3, 3),
-            blurRadius: 6,
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: BarChartSample7(alertsPerMonth: alertsPerMonth),
-    );
-  }
-
-  Widget _buildEmergencyButton(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        widget.navigateToPage(context, const EmergencyAlertPage());
-      },
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.all(8.0),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          height: 70,
-          width: 250,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Colors.red, Colors.redAccent],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(50),
-            border: Border.all(color: Colors.red, width: 2),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black26,
-                offset: Offset(2, 2),
-                blurRadius: 5,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Alert Trends',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  Text(
+                    'Monthly emergency alerts overview',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+              PopupMenuButton<int>(
+                icon: const Icon(Icons.more_vert),
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 1,
+                    child: Row(
+                      children: [
+                        Icon(Icons.refresh, color: Colors.blue[600], size: 20),
+                        const SizedBox(width: 8),
+                        const Text('Refresh Data'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 2,
+                    child: Row(
+                      children: [
+                        Icon(Icons.download, color: Colors.blue[600], size: 20),
+                        const SizedBox(width: 8),
+                        const Text('Export Data'),
+                      ],
+                    ),
+                  ),
+                ],
+                onSelected: (value) {
+                  if (value == 1) {
+                    _loadDashboardData();
+                  }
+                  // Handle other menu options
+                },
               ),
             ],
           ),
-          child: Center(
-            child: Text(
-              'Emergency Alert',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 18,
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 300,
+            child: BarChartSample7(alertsPerMonth: alertsPerMonth),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmergencyButton() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 24),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () =>
+              widget.navigateToPage(context, const EmergencyAlertPage()),
+          borderRadius: BorderRadius.circular(30),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.red[600]!, Colors.red[400]!],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              textAlign: TextAlign.center,
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.red[300]!.withOpacity(0.4),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.warning_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Emergency Alert',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -559,116 +696,114 @@ class BarChartSample7 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: AspectRatio(
-        aspectRatio: 1.4,
-        child: BarChart(
-          BarChartData(
-            alignment: BarChartAlignment.spaceBetween,
-            borderData: FlBorderData(
-              show: true,
-              border: Border.symmetric(
-                horizontal: BorderSide(
-                  color: Colors.grey.withOpacity(0.2),
-                ),
-              ),
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceBetween,
+        borderData: FlBorderData(
+          show: true,
+          border: Border.symmetric(
+            horizontal: BorderSide(
+              color: Colors.grey.withOpacity(0.2),
             ),
-            titlesData: FlTitlesData(
-              show: true,
-              leftTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  reservedSize: 40,
-                  getTitlesWidget: (value, meta) {
-                    return Text(
-                      value.toInt().toString(),
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    );
-                  },
-                ),
-              ),
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  reservedSize: 36,
-                  getTitlesWidget: (value, meta) {
-                    final months = [
-                      'Jan',
-                      'Feb',
-                      'Mar',
-                      'Apr',
-                      'May',
-                      'Jun',
-                      'Jul',
-                      'Aug',
-                      'Sep',
-                      'Oct',
-                      'Nov',
-                      'Dec'
-                    ];
-                    final index = value.toInt();
-                    return SideTitleWidget(
-                      axisSide: meta.axisSide,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4.0),
-                        child: Transform.rotate(
-                          angle: -math.pi / 4,
-                          child: Text(
-                            months[index % months.length],
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.normal,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              rightTitles: const AxisTitles(),
-              topTitles: const AxisTitles(),
-            ),
-            gridData: FlGridData(
-              show: true,
-              drawVerticalLine: true,
-              getDrawingVerticalLine: (value) => FlLine(
-                color: Colors.grey.withOpacity(0.2),
-                strokeWidth: 1,
-              ),
-              drawHorizontalLine: true,
-              getDrawingHorizontalLine: (value) => FlLine(
-                color: Colors.grey.withOpacity(0.2),
-                strokeWidth: 1,
-              ),
-            ),
-            barGroups: _buildBarGroups(alertsPerMonth),
-            maxY: alertsPerMonth.isNotEmpty
-                ? (alertsPerMonth.reduce((a, b) => math.max(a, b)) + 5)
-                    .toDouble()
-                : 5.0, // Default maxY to 5 if the list is empty
           ),
         ),
+        titlesData: FlTitlesData(
+          show: true,
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 40,
+              getTitlesWidget: (value, meta) {
+                return Text(
+                  value.toInt().toString(),
+                  style: GoogleFonts.poppins(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                );
+              },
+            ),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 36,
+              getTitlesWidget: (value, meta) {
+                final months = [
+                  'Jan',
+                  'Feb',
+                  'Mar',
+                  'Apr',
+                  'May',
+                  'Jun',
+                  'Jul',
+                  'Aug',
+                  'Sep',
+                  'Oct',
+                  'Nov',
+                  'Dec'
+                ];
+                final index = value.toInt();
+                return SideTitleWidget(
+                  axisSide: meta.axisSide,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Transform.rotate(
+                      angle: -math.pi / 4,
+                      child: Text(
+                        months[index % months.length],
+                        style: GoogleFonts.poppins(
+                          color: Colors.grey[600],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          rightTitles: const AxisTitles(),
+          topTitles: const AxisTitles(),
+        ),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: true,
+          getDrawingVerticalLine: (value) => FlLine(
+            color: Colors.grey.withOpacity(0.1),
+            strokeWidth: 1,
+          ),
+          drawHorizontalLine: true,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: Colors.grey.withOpacity(0.1),
+            strokeWidth: 1,
+          ),
+        ),
+        barGroups: _buildBarGroups(),
+        maxY: alertsPerMonth.isNotEmpty
+            ? (alertsPerMonth.reduce((a, b) => math.max(a, b)) + 5).toDouble()
+            : 5.0,
       ),
     );
   }
 
-  List<BarChartGroupData> _buildBarGroups(List<int> alertsPerMonth) {
-    return alertsPerMonth.asMap().entries.map((e) {
-      final index = e.key;
-      final data = e.value;
+  List<BarChartGroupData> _buildBarGroups() {
+    return alertsPerMonth.asMap().entries.map((entry) {
+      final index = entry.key;
+      final value = entry.value;
       return BarChartGroupData(
         x: index,
         barRods: [
           BarChartRodData(
-            toY: data.toDouble(),
-            color: Colors.blue,
-            width: 6,
+            toY: value.toDouble(),
+            gradient: LinearGradient(
+              colors: [Colors.blue[300]!, Colors.blue[600]!],
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+            ),
+            width: 12,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
           ),
         ],
       );
