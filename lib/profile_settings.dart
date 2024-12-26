@@ -35,60 +35,67 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
   }
 
   Future<void> _updateProfile() async {
-  if (!_formKey.currentState!.validate()) {
-    return; // Exit if validation fails
-  }
-
-  final name = _nameController.text.trim();
-  final email = _emailController.text.trim();
-  final password = _passwordController.text.trim();
-
-  setState(() {
-    _isLoading = true;
-  });
-
-  try {
-    final url = Uri.parse('http://localhost:5000/api/users/profile/${widget.userId}');
-    final requestBody = {
-      'name': name,
-      'email': email,
-      if (password.isNotEmpty) 'password': password, // Only send password if it's updated
-    };
-
-    // Log request body
-    debugPrint('Sending request to $url with body: $requestBody');
-
-    final response = await http.patch(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(requestBody),
-    );
-
-    // Log backend response
-    debugPrint('Response status: ${response.statusCode}');
-    debugPrint('Response body: ${response.body}');
-
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(responseData['message'] ?? 'Profile updated successfully')),
-      );
-      _passwordController.clear(); // Clear password field
-    } else {
-      final error = jsonDecode(response.body)['message'] ?? 'Failed to update profile';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+    if (!_formKey.currentState!.validate()) {
+      return; // Exit if validation fails
     }
-  } catch (e) {
-    debugPrint('Error occurred during profile update: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('An error occurred. Please try again later.')),
-    );
-  } finally {
+
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
     setState(() {
-      _isLoading = false;
+      _isLoading = true;
     });
+
+    try {
+      final url =
+          Uri.parse('http://localhost:5000/api/users/profile/${widget.userId}');
+      final requestBody = {
+        'name': name,
+        'email': email,
+        if (password.isNotEmpty)
+          'password': password, // Only send password if it's updated
+      };
+
+      // Log request body
+      debugPrint('Sending request to $url with body: $requestBody');
+
+      final response = await http.patch(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      // Log backend response
+      debugPrint('Response status: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  responseData['message'] ?? 'Profile updated successfully')),
+        );
+        _passwordController.clear(); // Clear password field
+      } else {
+        final error =
+            jsonDecode(response.body)['message'] ?? 'Failed to update profile';
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error)));
+      }
+    } catch (e) {
+      debugPrint('Error occurred during profile update: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('An error occurred. Please try again later.')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -163,7 +170,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                   : ElevatedButton(
                       onPressed: _updateProfile,
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 24.0),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 14.0, horizontal: 24.0),
                         backgroundColor: Colors.blueAccent,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8.0),

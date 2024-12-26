@@ -409,20 +409,6 @@ class _DashboardContentState extends State<DashboardContent> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildGlassCard(
-                    icon: Icons.person_pin_circle_rounded,
-                    title: 'Active Residents',
-                    value: '${dashboardSummary['activeResidents'] ?? 0}',
-                    primaryColor: const Color(0xFF10B981),
-                    secondaryColor: const Color(0xFF059669),
-                    gradientColors: const [
-                      Color(0xFFECFDF5),
-                      Color(0xFFD1FAE5)
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
