@@ -77,7 +77,7 @@ class _DashboardContentState extends State<DashboardContent>
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/emergency-alerts?residentId=$residentId');
+          'https://lifeec-mobile-hzo4.onrender.com/api/emergency-alerts?residentId=$residentId');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -121,7 +121,7 @@ class _DashboardContentState extends State<DashboardContent>
 
   Future<void> _fetchAlertsPerMonth(int year) async {
     final url = Uri.parse(
-        'http://localhost:5000/api/emergency-alerts/alerts/countByMonth?year=$year');
+        'https://lifeec-mobile-hzo4.onrender.com/api/emergency-alerts/alerts/countByMonth?year=$year');
 
     try {
       final response = await http.get(url);
@@ -140,7 +140,7 @@ class _DashboardContentState extends State<DashboardContent>
 
   Future<void> _fetchDashboardSummary() async {
     final url = Uri.parse(
-        'http://localhost:5000/api/emergency-alerts/dashboard/summary');
+        'https://lifeec-mobile-hzo4.onrender.com/api/emergency-alerts/dashboard/summary');
 
     try {
       final response = await http.get(url);

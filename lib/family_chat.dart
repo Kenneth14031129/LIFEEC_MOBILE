@@ -78,7 +78,8 @@ class FamilyChatPageState extends State<FamilyChatPage> {
   Future<void> _markMessagesAsRead() async {
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:5000/api/messages/mark-read'),
+        Uri.parse(
+            'https://lifeec-mobile-hzo4.onrender.com/api/messages/mark-read'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'senderId': widget.id,
@@ -127,7 +128,7 @@ class FamilyChatPageState extends State<FamilyChatPage> {
 
     try {
       final url = Uri.parse(
-        'http://localhost:5000/api/messages/between-users?senderId=$_loggedInUserId&receiverId=$_msgId',
+        'https://lifeec-mobile-hzo4.onrender.com/api/messages/between-users?senderId=$_loggedInUserId&receiverId=$_msgId',
       );
 
       final response = await http.get(url);
@@ -183,7 +184,7 @@ class FamilyChatPageState extends State<FamilyChatPage> {
       };
 
       final response = await http.post(
-        Uri.parse('http://localhost:5000/api/messages'),
+        Uri.parse('https://lifeec-mobile-hzo4.onrender.com/api/messages'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(messageData),
       );

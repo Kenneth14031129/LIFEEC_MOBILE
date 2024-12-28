@@ -90,7 +90,8 @@ class MessagesPageState extends State<MessagesPage> {
         print('Making API request to fetch unread counts...');
       }
       final response = await http.get(
-        Uri.parse('http://localhost:5000/api/messages/unread/$currentUserId'),
+        Uri.parse(
+            'https://lifeec-mobile-hzo4.onrender.com/api/messages/unread/$currentUserId'),
       );
 
       if (kDebugMode) {
@@ -146,7 +147,8 @@ class MessagesPageState extends State<MessagesPage> {
         print('Making API request to mark messages as read...');
       }
       final response = await http.post(
-        Uri.parse('http://localhost:5000/api/messages/mark-read'),
+        Uri.parse(
+            'https://lifeec-mobile-hzo4.onrender.com/api/messages/mark-read'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -196,7 +198,8 @@ class MessagesPageState extends State<MessagesPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:5000/api/emergency-alerts/all'),
+        Uri.parse(
+            'https://lifeec-mobile-hzo4.onrender.com/api/emergency-alerts/all'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -258,8 +261,8 @@ class MessagesPageState extends State<MessagesPage> {
     if (userType == null) return;
 
     try {
-      final response = await http
-          .get(Uri.parse('http://localhost:5000/api/users?userType=$userType'));
+      final response = await http.get(Uri.parse(
+          'https://lifeec-mobile-hzo4.onrender.com/api/users?userType=$userType'));
 
       if (response.statusCode == 200) {
         List jsonResponse = json.decode(response.body);

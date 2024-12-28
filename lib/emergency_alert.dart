@@ -41,7 +41,7 @@ class EmergencyAlertPageState extends State<EmergencyAlertPage>
     setState(() => _isLoading = true);
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:5000/api/patient/list'),
+        Uri.parse('https://lifeec-mobile-hzo4.onrender.com/api/patient/list'),
       );
 
       if (response.statusCode == 200) {
@@ -86,7 +86,8 @@ class EmergencyAlertPageState extends State<EmergencyAlertPage>
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:5000/api/emergency-alerts'),
+        Uri.parse(
+            'https://lifeec-mobile-hzo4.onrender.com/api/emergency-alerts'),
         headers: {
           "Content-Type": "application/json",
         },

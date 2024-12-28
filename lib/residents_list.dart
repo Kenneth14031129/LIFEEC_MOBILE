@@ -80,8 +80,8 @@ class ResidentsListPageState extends State<ResidentsListPage> {
 
   Future<void> _fetchResidents() async {
     try {
-      final response =
-          await http.get(Uri.parse('http://localhost:5000/api/patient/list'));
+      final response = await http.get(Uri.parse(
+          'https://lifeec-mobile-hzo4.onrender.com/api/patient/list'));
       if (response.statusCode == 200) {
         List<dynamic> jsonData = json.decode(response.body);
         List<Resident> residents = jsonData.map((data) {
@@ -130,8 +130,8 @@ class ResidentsListPageState extends State<ResidentsListPage> {
 
   Future<void> _fetchActivities() async {
     try {
-      final response = await http
-          .get(Uri.parse('http://localhost:5000/api/activities/list'));
+      final response = await http.get(Uri.parse(
+          'https://lifeec-mobile-hzo4.onrender.com/api/activities/list'));
       if (response.statusCode == 200) {
         Map<String, dynamic> jsonData = json.decode(response.body);
         List<dynamic> activities = jsonData['activities'];
@@ -156,8 +156,8 @@ class ResidentsListPageState extends State<ResidentsListPage> {
 
   Future<void> _fetchHealthProgress() async {
     try {
-      final response = await http
-          .get(Uri.parse('http://localhost:5000/api/health-progress/list'));
+      final response = await http.get(Uri.parse(
+          'https://lifeec-mobile-hzo4.onrender.com/api/health-progress/list'));
       if (response.statusCode == 200) {
         List<dynamic> jsonData = json.decode(response.body);
         Map<String, dynamic> healthProgressMap = {};
@@ -179,8 +179,8 @@ class ResidentsListPageState extends State<ResidentsListPage> {
 
   Future<void> _fetchMeals() async {
     try {
-      final response =
-          await http.get(Uri.parse('http://localhost:5000/api/v1/meal/list'));
+      final response = await http.get(Uri.parse(
+          'https://lifeec-mobile-hzo4.onrender.com/api/v1/meal/list'));
       if (response.statusCode == 200) {
         List<dynamic> jsonData = json.decode(response.body);
         Map<String, List<dynamic>> mealMap = {};
@@ -204,7 +204,8 @@ class ResidentsListPageState extends State<ResidentsListPage> {
       String id, Map<String, dynamic> updatedData) async {
     try {
       final response = await http.put(
-        Uri.parse('http://localhost:5000/api/health-progress/$id'),
+        Uri.parse(
+            'https://lifeec-mobile-hzo4.onrender.com/api/health-progress/$id'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -225,7 +226,7 @@ class ResidentsListPageState extends State<ResidentsListPage> {
       String id, Map<String, dynamic> updatedData) async {
     try {
       final response = await http.put(
-        Uri.parse('http://localhost:5000/api/activities/$id'),
+        Uri.parse('https://lifeec-mobile-hzo4.onrender.com/api/activities/$id'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -245,7 +246,7 @@ class ResidentsListPageState extends State<ResidentsListPage> {
   Future<void> updateMeal(String id, Map<String, dynamic> updatedData) async {
     try {
       final response = await http.put(
-        Uri.parse('http://localhost:5000/api/v1/meal/$id'),
+        Uri.parse('https://lifeec-mobile-hzo4.onrender.com/api/v1/meal/$id'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },

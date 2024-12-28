@@ -77,7 +77,7 @@ class HealthManagementPageState extends State<HealthManagementPage> {
   Future<void> fetchResidentData(String selectedResidentId) async {
     final response = await http.get(
       Uri.parse(
-          'http://localhost:5000/api/patient/$selectedResidentId'), // Replace with your actual API URL
+          'https://lifeec-mobile-hzo4.onrender.com/api/patient/$selectedResidentId'), // Replace with your actual API URL
       headers: {
         'Content-Type': 'application/json',
       },

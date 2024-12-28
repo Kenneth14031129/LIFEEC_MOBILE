@@ -106,7 +106,8 @@ class NurseDashboardState extends State<NurseDashboard> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:5000/api/emergency-alerts/all'),
+        Uri.parse(
+            'https://lifeec-mobile-hzo4.onrender.com/api/emergency-alerts/all'),
         headers: {'Content-Type': 'application/json'},
       );
 

@@ -30,7 +30,8 @@ class ResidentProvider extends ChangeNotifier {
 
   /// Fetch residents from the API and update the provider's list
   Future<void> fetchResidents() async {
-    final url = Uri.parse('http://localhost:5000/api/patient/list'); // Replace with your API endpoint
+    final url = Uri.parse(
+        'https://lifeec-mobile-hzo4.onrender.com/api/patient/list'); // Replace with your API endpoint
     _setLoading(true);
     _setError('');
     try {
@@ -61,7 +62,8 @@ class ResidentProvider extends ChangeNotifier {
 
   /// Fetch emergency alerts grouped by month for the dashboard
   Future<void> fetchAlertsPerMonth(int year) async {
-    final url = Uri.parse('http://localhost:5000/api/alerts/countByMonth?year=$year');
+    final url = Uri.parse(
+        'https://lifeec-mobile-hzo4.onrender.com/api/alerts/countByMonth?year=$year');
     _setLoading(true);
     _setError('');
     try {
@@ -82,7 +84,8 @@ class ResidentProvider extends ChangeNotifier {
 
   /// Fetch summary metrics for the dashboard (if needed)
   Future<Map<String, dynamic>> fetchDashboardSummary() async {
-    final url = Uri.parse('http://localhost:5000/api/dashboard/summary'); // Replace with your API endpoint
+    final url = Uri.parse(
+        'https://lifeec-mobile-hzo4.onrender.com/api/dashboard/summary'); // Replace with your API endpoint
     _setLoading(true);
     _setError('');
     try {
@@ -111,7 +114,8 @@ class ResidentProvider extends ChangeNotifier {
 
   /// Updates a resident's health data in the list
   void updateResidentHealthData(Resident updatedResident) {
-    final index = _residents.indexWhere((resident) => resident.name == updatedResident.name);
+    final index = _residents
+        .indexWhere((resident) => resident.name == updatedResident.name);
     if (index != -1) {
       _residents[index] = updatedResident;
       notifyListeners();

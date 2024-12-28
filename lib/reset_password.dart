@@ -18,7 +18,7 @@ class ResetPasswordState extends State<ResetPassword> {
   bool _isLoading = false;
   String _message = '';
 
-  final String baseUrl = 'http://localhost:5000/api/auth';
+  final String baseUrl = 'https://lifeec-mobile-hzo4.onrender.com/api/auth';
 
   Future<void> _handleResetPassword() async {
     if (!_formKey.currentState!.validate()) return;
@@ -118,7 +118,9 @@ class ResetPasswordState extends State<ResetPassword> {
                     _message,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: _message.contains('successfully') ? Colors.green : Colors.red,
+                      color: _message.contains('successfully')
+                          ? Colors.green
+                          : Colors.red,
                     ),
                   ),
                 ),

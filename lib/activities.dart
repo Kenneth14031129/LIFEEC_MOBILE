@@ -76,7 +76,8 @@ class ActivitiesPageState extends State<ActivitiesPage> {
       };
 
       // Use the API URL from the .env file
-      final baseUrl = dotenv.env['API_URL'] ?? 'http://localhost:5000/api';
+      final baseUrl = dotenv.env['API_URL'] ??
+          'https://lifeec-mobile-hzo4.onrender.com/api';
       final url = Uri.parse('$baseUrl/activities/add');
 
       try {

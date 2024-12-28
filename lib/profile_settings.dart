@@ -48,8 +48,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     });
 
     try {
-      final url =
-          Uri.parse('http://localhost:5000/api/users/profile/${widget.userId}');
+      final url = Uri.parse(
+          'https://lifeec-mobile-hzo4.onrender.com/api/users/profile/${widget.userId}');
       final requestBody = {
         'name': name,
         'email': email,
