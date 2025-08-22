@@ -37,10 +37,6 @@ A comprehensive mobile application built with Flutter for managing elderly care 
 - **Email Service**: Nodemailer
 - **Security**: CORS enabled
 
-## 📱 Screenshots
-
-*Screenshots coming soon*
-
 ## 🚀 Installation
 
 ### Prerequisites
